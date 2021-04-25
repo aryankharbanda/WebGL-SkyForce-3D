@@ -1,5 +1,5 @@
 var scene = new THREE.Scene();
-scene.background = new THREE.Color('red');
+scene.background = new THREE.Color('skyblue');
 
 var camera = new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,1000);
 // const camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 1000 );
@@ -53,7 +53,9 @@ class Player{
             }
             // this.fastSpeed = 1
             this.speed = 0.3
-            this.visible = false
+            this.visible = true
+            this.score = 0
+            this.health = 100
         })
     }
     moveup = () => {
@@ -120,6 +122,60 @@ loadModel = (file) => {
 
 // } );
 
+class Enemy{
+    constructor(position){
+        let promise = loadModel('models/enemy/scene.gltf').then((res) => this.model = res.scene);
+        Promise.all([promise]).then(() => {
+            
+            scene.add(this.model)
+            
+            this.model.position.set(position.x , position.y , position.z)
+            // missile.position.set(0,1,0);
+            this.ogX = position.x;
+            this.model.scale.set(0.06,0.06,0.06);
+            this.model.rotation.x = Math.PI/2;
+            // this.model.rotation.z = 0.6;
+            
+            this.width = 1.1
+            this.height = 0.93
+            this.boundingbox = {
+                x: this.model.position.x,
+                y: this.model.position.y,
+                width: this.width,
+                height: this.height
+            }
+            this.visible = true
+            this.xspeed = 0.4 
+            // console.log(this.boundingbox)
+        })
+
+    }
+
+    delete = () => {
+        scene.remove(this.model)
+        this.visible = false
+    }
+    update_bb = () => {
+        this.boundingbox.x = this.model.position.x;
+        this.boundingbox.y = this.model.position.y
+        // console.log(this.boundingbox)
+    }
+
+    animate = () => {
+        if(this.visible){
+            // var x2 = this.ogX;
+            var tl = new TimelineMax();
+            tl.to(this.model.position, 1, {x: this.ogX-this.xspeed, ease: Expo.easeOut})
+            tl.to(this.model.position, 1, {x: this.ogX, ease: Expo.easeOut})
+            bullets.push(new Bullet(new THREE.Vector3( this.model.position.x, this.model.position.y-1, this.model.position.z )))
+            tl.to(this.model.position, 1, {x: this.ogX+this.xspeed, ease: Expo.easeOut})
+            // bullets.push(new Bullet(new THREE.Vector3( this.model.position.x, this.model.position.y-1, this.model.position.z )))
+            tl.to(this.model.position, 1, {x: this.ogX, ease: Expo.easeOut})
+        }
+    }
+
+}
+
 class Missile{
     constructor(position){
         let promise = loadModel('models/missile2/scene.gltf').then((res) => this.model = res.scene);
@@ -140,21 +196,27 @@ class Missile{
                 width: this.width,
                 height: this.height
             }
+            this.visible = true
+            this.yspeed = 0.05
 
         })
     }
 
     move = () => {
-        this.model.position.y += 0.1;
+        this.model.position.y += this.yspeed;
         // console.log(this.model.position.y)
     }
 
     checkcoll = (enemyy) => {
-        if(detect_collision(this.boundingbox,enemyy.boundingbox)){
-            enemyy.delete()
-            this.delete()
-            // console.log("col")
+        if(enemyy.visible){
+            if(detect_collision(this.boundingbox,enemyy.boundingbox)){
+                enemyy.delete()
+                this.delete()
+
+                // console.log("col")
+            }
         }
+        
     }
 
     update_bb = () => {
@@ -165,42 +227,66 @@ class Missile{
 
     delete = () => {
         scene.remove(this.model)
+        this.visible = false
     }
 
 }
 
-class Enemy{
+class Bullet{
     constructor(position){
-        let promise = loadModel('models/enemy/scene.gltf').then((res) => this.model = res.scene);
+        let promise = loadModel('models/bullet2/scene.gltf').then((res) => this.model = res.scene);
         Promise.all([promise]).then(() => {
             
             scene.add(this.model)
             
             this.model.position.set(position.x , position.y , position.z)
             // missile.position.set(0,1,0);
-            this.model.scale.set(0.06,0.06,0.06);
-            this.model.rotation.x = Math.PI/2;
+            this.model.scale.set(0.1,0.1,0.1);
+            this.model.rotation.x = Math.PI;
+            // this.model.rotation.y = Math.PI/2;
+            // this.model.rotation.z = Math.PI/2;
             
-            this.width = 1.1
-            this.height = 0.93
+            this.width = 0.12
+            this.height = 0.2
             this.boundingbox = {
                 x: this.model.position.x,
                 y: this.model.position.y,
                 width: this.width,
                 height: this.height
             }
-            // console.log(this.boundingbox)
-        })
+            this.visible = true
+            this.yspeed = 0.05
 
+        })
+    }
+
+    move = () => {
+        // console.log(this.model.position)
+        this.model.position.y += -this.yspeed;
+        // console.log(this.model.position.y)
+    }
+
+    checkcoll = (playa) => {
+        if(this.visible){
+            if(detect_collision(this.boundingbox,playa.boundingbox)){
+                // playa.delete()
+                this.delete()
+                playa.health -= 10
+                // console.log("col")
+            }
+        }
+        
+    }
+
+    update_bb = () => {
+        this.boundingbox.x = this.model.position.x
+        this.boundingbox.y = this.model.position.y
+        // console.log(this.boundingbox)
     }
 
     delete = () => {
         scene.remove(this.model)
-    }
-    update_bb = () => {
-        this.boundingbox.x = this.model.position.x;
-        this.boundingbox.y = this.model.position.y
-        // console.log(this.boundingbox)
+        this.visible = false
     }
 
 }
@@ -215,6 +301,7 @@ class Star{
             this.model.position.set(position.x , position.y , position.z)
             this.model.scale.set(0.005,0.005,0.005);
             // this.model.rotation.x = Math.PI/2;
+            // this.model.rotation.z = .2;
             
             this.width = 0.46
             this.height = 0.37
@@ -224,26 +311,40 @@ class Star{
                 width: this.width,
                 height: this.height
             }
+            this.visible = true
             // console.log(this.boundingbox)
         })
 
     }
 
     checkcoll = (playa) => {
-        if(detect_collision(this.boundingbox,playa.boundingbox)){
-            // playa.delete()
-            this.delete()
-            // console.log("col")
+        if(this.visible){
+            if(detect_collision(this.boundingbox,playa.boundingbox)){
+                // playa.delete()
+                this.delete()
+                // console.log("col")
+                playa.score += 10
+            }
         }
     }
 
     delete = () => {
         scene.remove(this.model)
+        this.visible = false
     }
     update_bb = () => {
         this.boundingbox.x = this.model.position.x;
         this.boundingbox.y = this.model.position.y+0.15
         // console.log(this.boundingbox)
+    }
+
+    animate = () => {
+        if(this.visible){
+            var tl = new TimelineMax();
+            tl.to(this.model.rotation, 1, {z: -0.2, ease: Expo.easeOut})
+            tl.to(this.model.rotation, 1, {z: 0.2, ease: Expo.easeOut})
+        }
+        
     }
 
 }
@@ -256,24 +357,41 @@ detect_collision = (bba, bbb) => {
     return Boolean(bool1 && bool2)
 }
 
-var plane = new Player(new THREE.Vector3( 0, 0, 0 ))
-var enemy = new Enemy(new THREE.Vector3( 0, 2, 0 ))
-var star = new Star(new THREE.Vector3( 2, 2, 0 ))
-// var star = new Star(new THREE.Vector3( 0, 0, 0 ))
-// var missile = new Missile(new THREE.Vector3( 0, 0, 0 ))
+let mesh
+testMesh = () => {
+    var geometry = new THREE.BoxGeometry(1, 1, 1)
+    var material = new THREE.MeshLambertMaterial({color: 0xFFCC00})
+    mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(0,0,0.4)
+    mesh.scale.set(0.1,0.1,0.1)
+    // mesh.rotation.set(40,0,0)
+    scene.add(mesh)
+}
 
-
-var geometry = new THREE.BoxGeometry(1, 1, 1);
-var material = new THREE.MeshLambertMaterial({color: 0xFFCC00});
-var mesh = new THREE.Mesh(geometry, material);
-mesh.position.set(0,0,0.4);
-mesh.scale.set(0.1,0.1,0.1);
-// mesh.rotation.set(40,0,0);
-scene.add(mesh);
-
+// testMesh();
 addlighting();
 
 var missiles = [];
+var bullets = [];
+var stars = [];
+var enemies = [];
+
+var plane = new Player(new THREE.Vector3( 0, 0, 0 ))
+// var enemy = new Enemy(new THREE.Vector3( 0, 2, 0 ))
+enemies.push(new Enemy(new THREE.Vector3( 0, 2, 0 )))
+// var missile = new Missile(new THREE.Vector3( 0, 0, 0 ))
+stars.push(new Star(new THREE.Vector3( 2, 2, 0 )))
+// var bullet = new Bullet(new THREE.Vector3( 0, 0, 0 ))
+// star.animate()
+// var missile = new Missile(new THREE.Vector3( 0, 0, 0 ))
+
+for(var i=0; i<stars.length; i++){
+    setInterval(stars[i].animate, 2000)
+}
+for(var i=0; i<enemies.length; i++){
+    setInterval(enemies[i].animate, 4000)
+}
+
 
 document.addEventListener("keydown", onDocumentKeyDown, false);
 function onDocumentKeyDown(event) {
@@ -304,46 +422,51 @@ function onDocumentKeyDown(event) {
         // scene.add(missile);
         missiles.push(new Missile(new THREE.Vector3( plane.model.position.x, plane.model.position.y+1, plane.model.position.z )))
         // console.log(missiles)
+        star.animate()
+
     }
 };
 
+updateHUD = () => {
+    document.getElementById("scorr").innerHTML = 'Score: '+ String(plane.score);
+    document.getElementById("helth").innerHTML = 'Heath: '+ String(plane.health);
+}
 
 var render = () => {
     requestAnimationFrame(render);
-    // console.log(plane.model)
 
-    // mesh.rotation.x += 0.1;
-    // mesh.rotation.y += 0.1;
-
-    // plane.rotation.x += 0.1;
-    // if(missile.scale.x > 0.1){
-    //     missile.scale.x -= 0.01;
-    // }
+    for(var i=0; i<enemies.length; i++){
+        enemies[i].model.rotation.z += 0.1;
+        enemies[i].update_bb()
+    }
     
     // camera.position.y += 0.01;
     // plane.position.y += 0.01;
 
     // console.log(mesh.position)
+    updateHUD();
+    
 
     for(var i=0; i<missiles.length; i++){
         missiles[i].move()
         missiles[i].update_bb()
-        missiles[i].checkcoll(enemy);
+        for(var j=0; j<enemies.length; j++){
+            missiles[i].checkcoll(enemies[j]);
+        }
         // console.log(this.missiles[0].position.y)
         // console.log(missiles[0].boundingbox)
     }
-    star.checkcoll(plane)
-    enemy.update_bb()
+    for(var i=0; i<bullets.length; i++){
+        bullets[i].move()
+        bullets[i].update_bb()
+        bullets[i].checkcoll(plane);
+    }
+    for(var i=0; i<stars.length; i++){
+        stars[i].update_bb()
+        stars[i].checkcoll(plane)
+    }
     plane.update_bb()
-    star.update_bb()
     renderer.render(scene, camera);
 }
 
 render();
-
-// this.tl = new TimelineMax().delay(.3);
-// console.log(plane)
-// console.log(this.plane)
-// console.log(mesh)
-// console.log(this.mesh)
-// this.tl.to(this.mesh.position, 1, {x: 2, ease: Expo.easeOut})
