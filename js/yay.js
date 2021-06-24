@@ -151,6 +151,31 @@ class Enemy{
 
     }
 
+    move = () => {
+        this.model.position.y -= 0.01
+    }
+
+    remove = () => {
+        if(this.visible){
+            if(this.model.position.y<-5){
+                scene.remove(this.model)
+                this.visible = false
+            }
+        }
+    }
+
+    checkcoll = (playa) => {
+        if(this.visible){
+            if(detect_collision(this.boundingbox,playa.boundingbox)){
+                // playa.delete()
+                this.delete()
+                playa.health -= 30
+                // console.log("col")
+            }
+        }
+        
+    }
+
     delete = () => {
         scene.remove(this.model)
         this.visible = false
@@ -163,14 +188,16 @@ class Enemy{
 
     animate = () => {
         if(this.visible){
-            // var x2 = this.ogX;
             var tl = new TimelineMax();
             tl.to(this.model.position, 1, {x: this.ogX-this.xspeed, ease: Expo.easeOut})
             tl.to(this.model.position, 1, {x: this.ogX, ease: Expo.easeOut})
-            bullets.push(new Bullet(new THREE.Vector3( this.model.position.x, this.model.position.y-1, this.model.position.z )))
+            // bullets.push(new Bullet(new THREE.Vector3( this.model.position.x, this.model.position.y-1, this.model.position.z )))
             tl.to(this.model.position, 1, {x: this.ogX+this.xspeed, ease: Expo.easeOut})
             // bullets.push(new Bullet(new THREE.Vector3( this.model.position.x, this.model.position.y-1, this.model.position.z )))
             tl.to(this.model.position, 1, {x: this.ogX, ease: Expo.easeOut})
+            if(this.model.position.y < 4.3){
+                bullets.push(new Bullet(new THREE.Vector3( this.model.position.x, this.model.position.y-1, this.model.position.z )))
+            }
         }
     }
 
@@ -207,12 +234,21 @@ class Missile{
         // console.log(this.model.position.y)
     }
 
-    checkcoll = (enemyy) => {
-        if(enemyy.visible){
+    remove = () => {
+        if(this.visible){
+            if(this.model.position.y<-5){
+                scene.remove(this.model)
+                this.visible = false
+            }
+        }
+    }
+
+    checkcoll = (plane,enemyy) => {
+        if(enemyy.visible && this.visible){
             if(detect_collision(this.boundingbox,enemyy.boundingbox)){
                 enemyy.delete()
                 this.delete()
-
+                plane.score+= 10
                 // console.log("col")
             }
         }
@@ -323,7 +359,20 @@ class Star{
                 // playa.delete()
                 this.delete()
                 // console.log("col")
-                playa.score += 10
+                playa.score += 20
+            }
+        }
+    }
+
+    move = () => {
+        this.model.position.y -= 0.015
+    }
+
+    remove = () => {
+        if(this.visible){
+            if(this.model.position.y<-5){
+                scene.remove(this.model)
+                this.visible = false
             }
         }
     }
@@ -376,11 +425,50 @@ var bullets = [];
 var stars = [];
 var enemies = [];
 
-var plane = new Player(new THREE.Vector3( 0, 0, 0 ))
+var plane = new Player(new THREE.Vector3( 0, -1.5, 0 ))
 // var enemy = new Enemy(new THREE.Vector3( 0, 2, 0 ))
-enemies.push(new Enemy(new THREE.Vector3( 0, 2, 0 )))
+
+for(var k=0;k<20;k++){
+    if(k%3==0){
+        enemies.push(new Enemy(new THREE.Vector3( 0, 6.3+2*k, 0 )))
+    }
+    if(k%3==1){
+        enemies.push(new Enemy(new THREE.Vector3( -3, 6.3+2*k, 0 )))
+    }
+    if(k%3==2){
+        enemies.push(new Enemy(new THREE.Vector3( 3, 6.3+2*k, 0 )))
+    }
+
+}
+// for(var k =0;k<20;k++){
+//     enemies.push(new Enemy(new THREE.Vector3(0, 6.3+ 2*k, 0 )))
+// }
+// enemies.push(new Enemy(new THREE.Vector3( 0, 6.3, 0 )))
+// enemies.push(new Enemy(new THREE.Vector3( -3, 8.3, 0 )))
+// enemies.push(new Enemy(new THREE.Vector3( 0, 10.3, 0 )))
+// enemies.push(new Enemy(new THREE.Vector3( 3, 12.3, 0 )))
+// enemies.push(new Enemy(new THREE.Vector3( 0, 14.3, 0 )))
+// enemies.push(new Enemy(new THREE.Vector3( -3, 16.3, 0 )))
+// enemies.push(new Enemy(new THREE.Vector3( 0, 18.3, 0 )))
+// enemies.push(new Enemy(new THREE.Vector3( 3, 20.3, 0 )))
+// enemies.push(new Enemy(new THREE.Vector3( 0, 22.3, 0 )))
 // var missile = new Missile(new THREE.Vector3( 0, 0, 0 ))
-stars.push(new Star(new THREE.Vector3( 2, 2, 0 )))
+for(var k=0;k<40;k++){
+    if(k%2==1){
+        stars.push(new Star(new THREE.Vector3( 1.5, 4.3+k, 0 )))
+        stars.push(new Star(new THREE.Vector3( 4.5, 4.3+k, 0 )))
+
+    }
+    else{
+        stars.push(new Star(new THREE.Vector3( -1.5, 4.3+k, 0 )))
+        stars.push(new Star(new THREE.Vector3( -4.5, 4.3+k, 0 )))
+    }
+}
+// stars.push(new Star(new THREE.Vector3( 1.5, 4.3, 0 )))
+// stars.push(new Star(new THREE.Vector3( -1.5, 4.3, 0 )))
+// stars.push(new Star(new THREE.Vector3( 1.5, 5.3, 0 )))
+// stars.push(new Star(new THREE.Vector3( -1.5, 5.3, 0 )))
+
 // var bullet = new Bullet(new THREE.Vector3( 0, 0, 0 ))
 // star.animate()
 // var missile = new Missile(new THREE.Vector3( 0, 0, 0 ))
@@ -438,6 +526,10 @@ var render = () => {
     for(var i=0; i<enemies.length; i++){
         enemies[i].model.rotation.z += 0.1;
         enemies[i].update_bb()
+        enemies[i].move()
+        enemies[i].remove()
+        enemies[i].checkcoll(plane);
+        // console.log(enemies[i].model.position)
     }
     
     // camera.position.y += 0.01;
@@ -449,9 +541,10 @@ var render = () => {
 
     for(var i=0; i<missiles.length; i++){
         missiles[i].move()
+        missiles[i].remove()
         missiles[i].update_bb()
         for(var j=0; j<enemies.length; j++){
-            missiles[i].checkcoll(enemies[j]);
+            missiles[i].checkcoll(plane,enemies[j]);
         }
         // console.log(this.missiles[0].position.y)
         // console.log(missiles[0].boundingbox)
@@ -463,7 +556,9 @@ var render = () => {
     }
     for(var i=0; i<stars.length; i++){
         stars[i].update_bb()
+        stars[i].remove()
         stars[i].checkcoll(plane)
+        stars[i].move()
     }
     plane.update_bb()
     renderer.render(scene, camera);
